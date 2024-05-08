@@ -10,7 +10,7 @@ pub struct WebsocketService {
 
 impl WebsocketService {
     pub fn new() -> Self {
-        let ws = WebSocket::open("ws://127.0.0.1:8080").unwrap();
+        let ws = WebSocket::open("ws://127.0.0.1:8000").unwrap();
 
         let (mut write, mut read) = ws.split();
 

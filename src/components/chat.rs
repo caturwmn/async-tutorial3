@@ -14,7 +14,6 @@ pub enum Msg {
 
 #[derive(Deserialize)]
 struct MessageData {
-    from: String,
     message: String,
 }
 
@@ -37,7 +36,6 @@ struct WebSocketMessage {
 #[derive(Clone)]
 struct UserProfile {
     name: String,
-    avatar: String,
 }
 
 pub struct Chat {
@@ -92,11 +90,6 @@ impl Component for Chat {
                         .iter()
                         .map(|u| UserProfile {
                             name: u.into(),
-                            avatar: format!(
-                                "https://avatars.dicebear.com/api/adventurer-neutral/{}.svg",
-                                u
-                            )
-                            .into(),
                         })
                         .collect();
                     return true;
@@ -115,7 +108,7 @@ impl Component for Chat {
         Msg::SubmitMessage => {
             let input = self.chat_input.cast::<HtmlInputElement>();
             if let Some(input) = input {
-                //log::debug!("got input: {:?}", input.value());
+                log::debug!("got input: {:?}", input.value());
                 let message = WebSocketMessage {
                     message_type: MsgTypes::Message,
                     data: Some(input.value()),
@@ -129,9 +122,13 @@ impl Component for Chat {
                 {
                     log::debug!("error sending to channel: {:?}", e);
                 }
+                let message_data = MessageData {
+                    message: input.value()
+                };
+                self.messages.push(message_data);
                 input.set_value("");
             };
-            false
+            true
         }
     }
     }
@@ -139,41 +136,14 @@ impl Component for Chat {
     let submit = ctx.link().callback(|_| Msg::SubmitMessage);
     html! {
         <div class="flex w-screen">
-            <div class="flex-none w-56 h-screen bg-gray-100">
-                <div class="text-xl p-3">{"Users"}</div>
-                {
-                    self.users.clone().iter().map(|u| {
-                        html!{
-                            <div class="flex m-3 bg-white rounded-lg p-2">
-                                <div>
-                                    <img class="w-12 h-12 rounded-full" src={u.avatar.clone()} alt="avatar"/>
-                                </div>
-                                <div class="flex-grow p-3">
-                                    <div class="flex text-xs justify-between">
-                                        <div>{u.name.clone()}</div>
-                                    </div>
-                                    <div class="text-xs text-gray-400">
-                                        {"Hi there!"}
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    }).collect::<Html>()
-                }
-            </div>
             <div class="grow h-screen flex flex-col">
-                <div class="w-full h-14 border-b-2 border-gray-300"><div class="text-xl p-3">{"💬 Chat!"}</div></div>
+                <div class="w-full h-14 border-b-2 border-gray-300"><div class="text-xl p-3">{"💬 Memo!"}</div></div>
                 <div class="w-full grow overflow-auto border-b-2 border-gray-300">
                     {
                         self.messages.iter().map(|m| {
-                            let user = self.users.iter().find(|u| u.name == m.from).unwrap();
                             html!{
                                 <div class="flex items-end w-3/6 bg-gray-100 m-8 rounded-tl-lg rounded-tr-lg rounded-br-lg ">
-                                    <img class="w-8 h-8 rounded-full m-3" src={user.avatar.clone()} alt="avatar"/>
                                     <div class="p-3">
-                                        <div class="text-sm">
-                                            {m.from.clone()}
-                                        </div>
                                         <div class="text-xs text-gray-500">
                                             if m.message.ends_with(".gif") {
                                                 <img class="mt-3" src={m.message.clone()}/>
@@ -186,7 +156,6 @@ impl Component for Chat {
                             }
                         }).collect::<Html>()
                     }
-
                 </div>
                 <div class="w-full h-14 flex px-3 items-center">
                     <input ref={self.chat_input.clone()} type="text" placeholder="Message" class="block w-full py-2 pl-4 mx-3 bg-gray-100 rounded-full outline-none focus:text-gray-700" name="message" required=true />
